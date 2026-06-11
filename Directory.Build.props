@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Disable audit for this project — the only advisory is in System.Security.Cryptography.Xml
+         pulled in transitively by EF Core design-time tooling. It is not a runtime surface.
+         Re-enable when EF Core Design ships a clean dependency graph. -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+</Project>
