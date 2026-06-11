@@ -11,9 +11,12 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
+
         services.AddDbContext<CardsDbContext>(options =>
             options.UseNpgsql(
-                configuration.GetConnectionString("Default"),
+                connectionString,
                 npgsql => npgsql.MigrationsAssembly(typeof(CardsDbContext).Assembly.FullName)));
 
         return services;

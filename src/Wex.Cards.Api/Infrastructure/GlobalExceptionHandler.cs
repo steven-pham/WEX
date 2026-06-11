@@ -12,7 +12,7 @@ internal sealed class GlobalExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
+        logger.LogError(exception, "Unhandled exception.");
 
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
