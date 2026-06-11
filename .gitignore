@@ -3,6 +3,12 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# Spec-driven development (local only)
+openspec/
+
+# Claude Code local config and memory
+.claude/
+
 # dotenv files
 .env
 
