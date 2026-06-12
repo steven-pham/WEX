@@ -16,8 +16,11 @@ cp .env.example .env
 # 2. Start the database
 docker compose up -d db
 
-# 3. Run the API
+# 3. Apply database migrations
 cd src/Wex.Cards.Api
+dotnet ef database update --project ../Wex.Cards.Infrastructure
+
+# 4. Run the API
 dotnet run
 ```
 
@@ -33,13 +36,6 @@ dotnet test tests/Wex.Cards.UnitTests
 
 # Integration tests (spins up Postgres automatically via Testcontainers — Docker required)
 dotnet test tests/Wex.Cards.IntegrationTests
-```
-
-## Applying Migrations
-
-```bash
-cd src/Wex.Cards.Api
-dotnet ef database update --project ../Wex.Cards.Infrastructure
 ```
 
 ## Treasury Exchange Rate Integration
