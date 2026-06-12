@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Wex.Cards.Application.Ports;
+using Wex.Cards.Infrastructure.ExchangeRates;
 using Wex.Cards.Infrastructure.Persistence;
 using Wex.Cards.Infrastructure.Persistence.Repositories;
 
@@ -23,6 +24,13 @@ public static class DependencyInjection
 
         services.AddScoped<ICardRepository, CardRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
+
+        var treasuryBaseUrl = configuration["TreasuryApi:BaseUrl"]
+            ?? throw new InvalidOperationException("TreasuryApi:BaseUrl is not configured.");
+
+        services.AddHttpClient<IExchangeRateProvider, TreasuryExchangeRateProvider>(client =>
+            client.BaseAddress = new Uri(treasuryBaseUrl))
+            .AddStandardResilienceHandler();
 
         return services;
     }

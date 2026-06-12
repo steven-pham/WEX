@@ -42,6 +42,49 @@ cd src/Wex.Cards.Api
 dotnet ef database update --project ../Wex.Cards.Infrastructure
 ```
 
+## Treasury Exchange Rate Integration
+
+The Treasury Reporting Rates of Exchange client is registered via `IHttpClientFactory` with
+`AddStandardResilienceHandler()`. The following resilience defaults are in effect (no overrides):
+
+| Policy | Default |
+|---|---|
+| Total request timeout | 30 s |
+| Per-attempt timeout | 10 s |
+| Retry | 3 retries, exponential-with-jitter backoff, base delay 2 s |
+| Circuit breaker | Opens at 10 % failure ratio over a 30 s sampling window (min 100 requests); break duration 5 s |
+
+The base URL is configurable via `TreasuryApi:BaseUrl` in `appsettings.json` (or the
+`TreasuryApi__BaseUrl` environment variable).
+
+### Supported currencies
+
+The following ISO 4217 codes are mapped to the Treasury `country_currency_desc` field.
+Any other code returns "no rate available" without calling the API.
+
+| ISO 4217 | Treasury description |
+|---|---|
+| `AUD` | Australia-Dollar |
+| `BRL` | Brazil-Real |
+| `CAD` | Canada-Dollar |
+| `CNY` | China-Renminbi |
+| `DKK` | Denmark-Krone |
+| `EUR` | Euro Zone-Euro |
+| `GBP` | United Kingdom-Pound |
+| `HKD` | Hong Kong-Dollar |
+| `INR` | India-Rupee |
+| `JPY` | Japan-Yen |
+| `KRW` | Korea-Won |
+| `MXN` | Mexico-Peso |
+| `NOK` | Norway-Krone |
+| `NZD` | New Zealand-Dollar |
+| `SEK` | Sweden-Krona |
+| `SGD` | Singapore-Dollar |
+| `CHF` | Switzerland-Franc |
+| `ZAR` | South Africa-Rand |
+
+`USD` is the base currency — a rate of `1.0` is returned without an API call.
+
 ## Assumptions
 
 > These are documented for the reviewer and represent decisions made to move forward

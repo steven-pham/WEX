@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Wex.Cards.Domain\Wex.Cards.Domain.csproj" />
     <ProjectReference Include="..\..\src\Wex.Cards.Application\Wex.Cards.Application.csproj" />
+    <ProjectReference Include="..\..\src\Wex.Cards.Infrastructure\Wex.Cards.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
