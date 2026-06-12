@@ -1,6 +1,6 @@
 # WEX Cards API
 
-Take-home assessment: a card payment API in .NET 10.
+A card payment API in .NET 10.
 
 ## Prerequisites
 
