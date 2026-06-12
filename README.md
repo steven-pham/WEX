@@ -30,7 +30,12 @@ Health check: `http://localhost:5112/health`
 
 ## Running Tests
 
+Run these from the **repo root** (not from `src/Wex.Cards.Api`):
+
 ```bash
+# Return to the repo root if you followed the Quick Start steps
+cd <repo-root>
+
 # Unit tests (no external dependencies)
 dotnet test tests/Wex.Cards.UnitTests
 
