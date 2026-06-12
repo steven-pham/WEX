@@ -87,8 +87,8 @@ Any other code returns "no rate available" without calling the API.
 
 ## Assumptions
 
-> These are documented for the reviewer and represent decisions made to move forward
-> given the assessment timeframe. They are intentionally called out as questions.
+> The following decisions were made to keep scope within the assessment timeframe.
+> Each one is a candidate for discussion.
 
 1. **Native / base currency is USD.** Stored amounts (credit limit, transaction amounts)
    are assumed to be in USD. The Treasury Reporting Rates of Exchange API quotes units
@@ -112,6 +112,71 @@ Any other code returns "no rate available" without calling the API.
 | `POST` | `/cards/{cardId}/transactions` | Store a purchase transaction |
 | `GET` | `/transactions/{id}` | Retrieve a transaction (optionally converted to a target currency) |
 | `GET` | `/health` | Health check |
+
+### API Examples
+
+Replace `<CARD_ID>` and `<TX_ID>` with the UUIDs returned from the create calls.
+
+**Create a card** (Requirement #1)
+```bash
+curl -s -X POST http://localhost:5112/cards \
+  -H "Content-Type: application/json" \
+  -d '{"creditLimit": 1000.00}' | jq
+```
+
+**Retrieve a card**
+```bash
+curl -s http://localhost:5112/cards/<CARD_ID> | jq
+```
+
+**Store a purchase transaction** (Requirement #2)
+```bash
+curl -s -X POST http://localhost:5112/cards/<CARD_ID>/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Coffee shop", "transactionDate": "2025-01-15", "amount": 5.75}' | jq
+```
+
+**Retrieve a transaction — original amount**
+```bash
+curl -s http://localhost:5112/transactions/<TX_ID> | jq
+```
+
+**Retrieve a transaction in a target currency** (Requirement #3)
+```bash
+curl -s "http://localhost:5112/transactions/<TX_ID>?currency=EUR" | jq
+```
+
+**Available balance in native currency** (Requirement #4)
+```bash
+curl -s http://localhost:5112/cards/<CARD_ID>/balance | jq
+```
+
+**Available balance in a target currency**
+```bash
+curl -s "http://localhost:5112/cards/<CARD_ID>/balance?currency=GBP" | jq
+```
+
+An HTTP requests file covering all scenarios is also available at
+[`src/Wex.Cards.Api/Wex.Cards.Api.http`](src/Wex.Cards.Api/Wex.Cards.Api.http)
+(open in VS Code REST Client or JetBrains HTTP Client).
+
+## Open Questions
+
+The following points were intentionally left open and are worth discussing in a real world scenario:
+
+1. **Base currency assumption** — stored amounts (credit limit, transaction amounts) are
+   treated as USD. The Treasury API quotes units of foreign currency per 1 USD, so
+   conversion is `amount_usd × rate`. Happy to revisit if a different base currency
+   is expected.
+
+2. **Combined vs separate endpoint** — `GET /transactions/{id}?currency=XXX` serves both
+   Requirement #2 (no `currency` param → original amount in USD) and Requirement #3
+   (with `currency` param → converted amount) from a single endpoint. A separate endpoint
+   could make the contract more explicit; the current design favours a smaller surface.
+
+3. **Unsupported currency behaviour** — an ISO 4217 code not in the curated map (e.g.
+   `THB`) returns `422 Unprocessable Entity` with a ProblemDetails body rather than
+   `400 Bad Request`. Open to adjusting if a different status code is preferred.
 
 ## Project Structure
 

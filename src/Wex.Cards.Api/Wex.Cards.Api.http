@@ -1,6 +1,95 @@
-@Wex.Cards.Api_HostAddress = http://localhost:5112
+@host = http://localhost:5112
 
-GET {{Wex.Cards.Api_HostAddress}}/health
+# Use the @card_id and @tx_id variables below after running the create calls.
+# VS Code REST Client: set them from the response with `# @name` and `{{response.body.$.id}}`.
+# JetBrains HTTP Client: assign via the response handler shown in each request.
+
+### Health check
+GET {{host}}/health
 Accept: application/json
 
 ###
+# Requirement #1 — Create a card
+# @name createCard
+POST {{host}}/cards
+Content-Type: application/json
+
+{
+  "creditLimit": 1000.00
+}
+
+###
+# Requirement #1 — Retrieve the card
+# Replace <CARD_ID> with the id returned above.
+@card_id = <CARD_ID>
+
+GET {{host}}/cards/{{card_id}}
+Accept: application/json
+
+###
+# Requirement #2 — Store a purchase transaction
+# @name createTransaction
+POST {{host}}/cards/{{card_id}}/transactions
+Content-Type: application/json
+
+{
+  "description": "Coffee shop",
+  "transactionDate": "2025-01-15",
+  "amount": 5.75
+}
+
+###
+# Requirement #2 — Retrieve the transaction (original amount in USD)
+# Replace <TX_ID> with the id returned above.
+@tx_id = <TX_ID>
+
+GET {{host}}/transactions/{{tx_id}}
+Accept: application/json
+
+###
+# Requirement #3 — Retrieve the transaction converted to EUR
+GET {{host}}/transactions/{{tx_id}}?currency=EUR
+Accept: application/json
+
+###
+# Requirement #3 — Retrieve the transaction converted to GBP
+GET {{host}}/transactions/{{tx_id}}?currency=GBP
+Accept: application/json
+
+###
+# Requirement #4 — Available balance in USD (native)
+GET {{host}}/cards/{{card_id}}/balance
+Accept: application/json
+
+###
+# Requirement #4 — Available balance converted to EUR
+GET {{host}}/cards/{{card_id}}/balance?currency=EUR
+Accept: application/json
+
+###
+# Error cases
+
+# Unknown card → 404
+GET {{host}}/cards/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###
+# Unknown transaction → 404
+GET {{host}}/transactions/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###
+# Unsupported currency → 422
+GET {{host}}/transactions/{{tx_id}}?currency=XYZ
+Accept: application/json
+
+###
+# Store transaction on unknown card → 404
+POST {{host}}/cards/00000000-0000-0000-0000-000000000000/transactions
+Content-Type: application/json
+
+{
+  "description": "Test",
+  "transactionDate": "2025-01-15",
+  "amount": 10.00
+}
