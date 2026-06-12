@@ -8,12 +8,12 @@ internal sealed class CardRepository(CardsDbContext context) : ICardRepository
 {
     public async Task AddAsync(Card card, CancellationToken ct = default)
     {
-        await context.Cards.AddAsync(card, ct);
+        context.Cards.Add(card);
         await context.SaveChangesAsync(ct);
     }
 
     public async Task<Card?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await context.Cards.FirstOrDefaultAsync(c => c.Id == id, ct);
+        return await context.Cards.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
     }
 }

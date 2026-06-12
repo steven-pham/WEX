@@ -12,7 +12,15 @@ internal sealed class ValidateModelFilter : IAsyncActionFilter
 
         foreach (var argument in context.ActionArguments.Values)
         {
-            if (argument is null) continue;
+            if (argument is null)
+            {
+                context.Result = new BadRequestObjectResult(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Request body is required."
+                });
+                return;
+            }
 
             var validatorType = typeof(IValidator<>).MakeGenericType(argument.GetType());
             if (services.GetService(validatorType) is IValidator validator)

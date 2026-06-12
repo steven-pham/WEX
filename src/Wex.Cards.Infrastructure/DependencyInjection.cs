@@ -22,6 +22,7 @@ public static class DependencyInjection
                 npgsql => npgsql.MigrationsAssembly(typeof(CardsDbContext).Assembly.FullName)));
 
         services.AddScoped<ICardRepository, CardRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
 
         return services;
     }

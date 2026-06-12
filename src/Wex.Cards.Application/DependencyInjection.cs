@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Wex.Cards.Application.Cards;
+using Wex.Cards.Application.Transactions;
 
 namespace Wex.Cards.Application;
 
@@ -10,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.AddScoped<CardService>();
+        services.AddScoped<TransactionService>();
         return services;
     }
 }

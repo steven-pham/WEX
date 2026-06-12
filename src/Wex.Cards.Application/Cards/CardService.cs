@@ -10,7 +10,9 @@ public sealed class CardService(ICardRepository repository)
 {
     public async Task<CreateCardResult> CreateAsync(CreateCardCommand command, CancellationToken ct = default)
     {
-        var card = Card.Create(command.CreditLimit ?? throw new ArgumentNullException(nameof(command)));
+        if (command.CreditLimit is null)
+            throw new CardDomainException("Credit limit is required.");
+        var card = Card.Create(command.CreditLimit.Value);
         await repository.AddAsync(card, ct);
         return new CreateCardResult(card.Id, card.CreditLimit.Amount);
     }

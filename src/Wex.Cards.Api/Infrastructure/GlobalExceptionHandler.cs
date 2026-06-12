@@ -13,39 +13,19 @@ internal sealed class GlobalExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (exception is CardNotFoundException)
+        var (statusCode, title) = exception switch
         {
-            httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-            {
-                HttpContext = httpContext,
-                Exception = exception,
-                ProblemDetails = new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "The requested card was not found."
-                }
-            });
-        }
+            CardNotFoundException or TransactionNotFoundException =>
+                (StatusCodes.Status404NotFound, "Resource not found."),
+            CardDomainException or TransactionDomainException =>
+                (StatusCodes.Status400BadRequest, exception.Message),
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
+        };
 
-        if (exception is CardDomainException)
-        {
-            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-            {
-                HttpContext = httpContext,
-                Exception = exception,
-                ProblemDetails = new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = exception.Message
-                }
-            });
-        }
+        if (statusCode == StatusCodes.Status500InternalServerError)
+            logger.LogError(exception, "Unhandled exception.");
 
-        logger.LogError(exception, "Unhandled exception.");
-
-        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        httpContext.Response.StatusCode = statusCode;
 
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
@@ -53,8 +33,8 @@ internal sealed class GlobalExceptionHandler(
             Exception = exception,
             ProblemDetails = new ProblemDetails
             {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "An unexpected error occurred."
+                Status = statusCode,
+                Title = title
             }
         });
     }

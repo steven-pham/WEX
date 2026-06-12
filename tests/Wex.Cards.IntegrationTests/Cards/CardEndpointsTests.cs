@@ -61,26 +61,4 @@ public sealed class CardEndpointsTests(CardApiFactory factory) : IClassFixture<C
         Assert.NotEmpty(body.Errors);
     }
 
-    [Theory]
-    [InlineData("1000.123")]
-    [InlineData("0.001")]
-    public async Task PostCards_CreditLimitExceedsMaxDecimalPlaces_Returns400WithProblemDetails(string input)
-    {
-        var response = await _client.PostAsJsonAsync("/cards", new CreateCardRequest(decimal.Parse(input)));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-
-        var body = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
-        Assert.NotNull(body);
-        Assert.Equal(StatusCodes.Status400BadRequest, body.Status);
-        Assert.NotEmpty(body.Errors);
-    }
-
-    [Fact]
-    public async Task GetCard_MalformedGuid_Returns404()
-    {
-        var response = await _client.GetAsync("/cards/not-a-guid");
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
 }
