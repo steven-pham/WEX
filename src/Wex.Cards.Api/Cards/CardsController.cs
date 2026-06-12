@@ -1,14 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Wex.Cards.Application.Cards;
 using Wex.Cards.Application.Cards.Commands;
-using Wex.Cards.Application.Cards.Queries;
 
 namespace Wex.Cards.Api.Cards;
 
 [ApiController]
 [Route("cards")]
-public sealed class CardsController(
-    CreateCardService createCardService,
-    GetCardService getCardService) : ControllerBase
+public sealed class CardsController(CardService cardService) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType<CreateCardResponse>(StatusCodes.Status201Created)]
@@ -18,7 +16,7 @@ public sealed class CardsController(
         CancellationToken ct)
     {
         var command = new CreateCardCommand(request.CreditLimit);
-        var result = await createCardService.ExecuteAsync(command, ct);
+        var result = await cardService.CreateAsync(command, ct);
         var response = new CreateCardResponse(result.Id, result.CreditLimit);
         return CreatedAtAction(nameof(GetCard), new { id = result.Id }, response);
     }
@@ -28,7 +26,7 @@ public sealed class CardsController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCard(Guid id, CancellationToken ct)
     {
-        var result = await getCardService.ExecuteAsync(new GetCardQuery(id), ct);
+        var result = await cardService.GetAsync(id, ct);
         return Ok(new GetCardResponse(result.Id, result.CreditLimit));
     }
 }

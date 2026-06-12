@@ -1,7 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using Wex.Cards.Application.Cards.Commands;
-using Wex.Cards.Application.Cards.Queries;
+using Wex.Cards.Application.Cards;
 
 namespace Wex.Cards.Application;
 
@@ -10,8 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
-        services.AddScoped<CreateCardService>();
-        services.AddScoped<GetCardService>();
+        services.AddScoped<CardService>();
         return services;
     }
 }
