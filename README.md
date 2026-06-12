@@ -179,6 +179,47 @@ The following points were intentionally left open and are worth discussing in a 
    `THB`) returns `422 Unprocessable Entity` with a ProblemDetails body rather than
    `400 Bad Request`. Open to adjusting if a different status code is preferred.
 
+## Future Improvements
+
+The following are improvements that would be prioritised in a production system:
+
+1. **Enforce balance on transaction creation** — `TransactionService.AddAsync` currently accepts any
+   positive amount without checking the card's available balance. A balance check (credit limit minus
+   total spent) should happen inside a database transaction with a row-level lock on the card row,
+   so two concurrent purchases cannot both succeed when only one fits within the remaining balance.
+
+2. **Idempotency keys** — Payment APIs need protection against duplicate submissions (network retries,
+   double-clicks). Adding an `Idempotency-Key` header on `POST /cards/{cardId}/transactions` and
+   persisting the key alongside the transaction would let the API return the original response for
+   replayed requests rather than creating duplicates.
+
+3. **Transaction reversal / refunds** — There is currently no way to void or refund a transaction.
+   A `POST /transactions/{id}/reversal` endpoint (creating a negative-amount transaction in the same
+   domain model) would restore the balance and keep a full audit trail without deleting data.
+
+4. **Authentication & authorisation** — All endpoints are open. In production, cards and transactions
+   would be scoped to an authenticated account (e.g. JWT bearer), and a card owner should not be
+   able to read or transact against another owner's card.
+
+5. **Exchange rate caching** — Treasury rates are published quarterly, not in real time. Every
+   balance or transaction query currently hits the external API. A short-lived in-memory or
+   distributed cache (e.g. `IMemoryCache` with a 1-hour TTL) would eliminate the latency and
+   reduce the risk of the circuit breaker opening under load.
+
+6. **Pagination on transaction history** — `GET /cards/{id}/transactions` does not exist yet, and
+   when it does, returning unbounded rows would be unsafe. Standard cursor- or offset-based
+   pagination (e.g. `?page=1&pageSize=20`) should be built in from the start.
+
+7. **Domain events & outbox pattern** — Side-effects like sending a spend-alert notification or
+   updating a downstream ledger should not happen inside the same database transaction as the write.
+   Raising domain events (e.g. `TransactionCreated`) and publishing them via an outbox table
+   decouples these concerns and guarantees at-least-once delivery even if the process crashes
+   mid-request.
+
+8. **Card lifecycle management** — Cards have no status field. Production cards need states
+   (active, frozen, cancelled) so that transactions can be rejected against a frozen or cancelled
+   card without deleting any data.
+
 ## Project Structure
 
 ```
