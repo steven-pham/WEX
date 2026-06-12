@@ -18,4 +18,9 @@ internal sealed class TransactionRepository(CardsDbContext context) : ITransacti
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Id == id, ct);
     }
+
+    public Task<decimal> GetTotalSpentAsync(Guid cardId, CancellationToken ct = default)
+        => context.Transactions.AsNoTracking()
+            .Where(t => t.CardId == cardId)
+            .SumAsync(t => t.Amount.Amount, ct);
 }

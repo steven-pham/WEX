@@ -19,7 +19,7 @@ internal sealed class GlobalExceptionHandler(
                 (StatusCodes.Status404NotFound, "Resource not found."),
             CardDomainException or TransactionDomainException =>
                 (StatusCodes.Status400BadRequest, exception.Message),
-            TransactionCurrencyConversionException =>
+            TransactionCurrencyConversionException or CardBalanceCurrencyConversionException =>
                 (StatusCodes.Status422UnprocessableEntity, exception.Message),
             ExchangeRateUnavailableException =>
                 (StatusCodes.Status503ServiceUnavailable, "An upstream exchange rate service is unavailable."),

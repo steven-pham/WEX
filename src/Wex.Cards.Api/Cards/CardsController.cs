@@ -29,4 +29,17 @@ public sealed class CardsController(CardService cardService) : ControllerBase
         var result = await cardService.GetAsync(id, ct);
         return Ok(new GetCardResponse(result.Id, result.CreditLimit));
     }
+
+    [HttpGet("{id:guid}/balance")]
+    [ProducesResponseType<GetCardBalanceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetCardBalance(
+        Guid id,
+        [FromQuery] string? currency,
+        CancellationToken ct)
+    {
+        var result = await cardService.GetBalanceAsync(id, currency, ct);
+        return Ok(new GetCardBalanceResponse(result.AvailableBalance, result.ExchangeRate, result.ConvertedBalance));
+    }
 }

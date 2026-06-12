@@ -9,11 +9,18 @@ namespace Wex.Cards.UnitTests.Cards;
 
 public sealed class CardServiceTests
 {
+    private static CardService BuildService(ICardRepository? cardRepo = null)
+    {
+        var txRepo = Substitute.For<ITransactionRepository>();
+        var rateProvider = Substitute.For<IExchangeRateProvider>();
+        return new CardService(cardRepo ?? Substitute.For<ICardRepository>(), txRepo, rateProvider);
+    }
+
     [Fact]
     public async Task CreateAsync_ValidCommand_AddsCardAndReturnsResult()
     {
         var repo = Substitute.For<ICardRepository>();
-        var service = new CardService(repo);
+        var service = BuildService(repo);
         var command = new CreateCardCommand(500m);
 
         var result = await service.CreateAsync(command);
@@ -29,7 +36,7 @@ public sealed class CardServiceTests
         var card = Card.Create(300m);
         var repo = Substitute.For<ICardRepository>();
         repo.GetByIdAsync(card.Id).Returns(card);
-        var service = new CardService(repo);
+        var service = BuildService(repo);
 
         var result = await service.GetAsync(card.Id);
 
@@ -42,7 +49,7 @@ public sealed class CardServiceTests
     {
         var repo = Substitute.For<ICardRepository>();
         repo.GetByIdAsync(Arg.Any<Guid>()).Returns((Card?)null);
-        var service = new CardService(repo);
+        var service = BuildService(repo);
 
         await Assert.ThrowsAsync<CardNotFoundException>(() => service.GetAsync(Guid.NewGuid()));
     }
