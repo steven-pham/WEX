@@ -1,3 +1,4 @@
+using FluentValidation;
 using Serilog;
 using Wex.Cards.Api.Infrastructure;
 using Wex.Cards.Application;
@@ -22,6 +23,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddHealthChecks();
 
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
