@@ -23,11 +23,22 @@ public sealed class TransactionsController(TransactionService transactionService
     }
 
     [HttpGet("transactions/{id:guid}")]
-    [ProducesResponseType<GetTransactionResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<GetConvertedTransactionResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetTransaction(Guid id, CancellationToken ct)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetTransaction(
+        Guid id,
+        [FromQuery] string? currency,
+        CancellationToken ct)
     {
-        var result = await transactionService.GetAsync(id, ct);
-        return Ok(new GetTransactionResponse(result.Id, result.CardId, result.Description, result.TransactionDate, result.Amount));
+        var result = await transactionService.GetAsync(id, currency, ct);
+        return Ok(new GetConvertedTransactionResponse(
+            result.Id,
+            result.CardId,
+            result.Description,
+            result.TransactionDate,
+            result.OriginalAmount,
+            result.ExchangeRate,
+            result.ConvertedAmount));
     }
 }

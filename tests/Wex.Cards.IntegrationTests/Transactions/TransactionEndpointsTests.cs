@@ -47,7 +47,7 @@ public sealed class TransactionEndpointsTests(CardApiFactory factory) : IClassFi
     }
 
     [Fact]
-    public async Task GetTransaction_ExistingId_ReturnsOriginalAmount()
+    public async Task GetTransaction_ExistingId_ReturnsUnifiedShapeWithBaseRateAndOriginalAmount()
     {
         var cardId = await CreateCardAsync();
         var postResponse = await _client.PostAsJsonAsync($"/cards/{cardId}/transactions",
@@ -57,13 +57,15 @@ public sealed class TransactionEndpointsTests(CardApiFactory factory) : IClassFi
         var getResponse = await _client.GetAsync($"/transactions/{created!.Id}");
 
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
-        var body = await getResponse.Content.ReadFromJsonAsync<GetTransactionResponse>();
+        var body = await getResponse.Content.ReadFromJsonAsync<GetConvertedTransactionResponse>();
         Assert.NotNull(body);
         Assert.Equal(created.Id, body.Id);
         Assert.Equal(cardId, body.CardId);
         Assert.Equal("Fuel", body.Description);
         Assert.Equal(new DateOnly(2024, 3, 10), body.TransactionDate);
-        Assert.Equal(42.50m, body.Amount);
+        Assert.Equal(42.50m, body.OriginalAmount);
+        Assert.Equal(1.0m, body.ExchangeRate);
+        Assert.Equal(42.50m, body.ConvertedAmount);
     }
 
     [Fact]

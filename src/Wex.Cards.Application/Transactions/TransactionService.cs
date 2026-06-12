@@ -6,7 +6,10 @@ using Wex.Cards.Domain.Exceptions;
 
 namespace Wex.Cards.Application.Transactions;
 
-public sealed class TransactionService(ICardRepository cardRepository, ITransactionRepository transactionRepository)
+public sealed class TransactionService(
+    ICardRepository cardRepository,
+    ITransactionRepository transactionRepository,
+    IExchangeRateProvider exchangeRateProvider)
 {
     public async Task<AddTransactionResult> AddAsync(AddTransactionCommand command, CancellationToken ct = default)
     {
@@ -37,17 +40,38 @@ public sealed class TransactionService(ICardRepository cardRepository, ITransact
             transaction.Amount.Amount);
     }
 
-    public async Task<GetTransactionResult> GetAsync(Guid id, CancellationToken ct = default)
+    public async Task<GetConvertedTransactionResult> GetAsync(
+        Guid id, string? currency, CancellationToken ct = default)
     {
         var transaction = await transactionRepository.GetByIdAsync(id, ct);
         if (transaction is null)
             throw new TransactionNotFoundException(id);
 
-        return new GetTransactionResult(
+        if (currency is null || currency.Equals("USD", StringComparison.OrdinalIgnoreCase))
+        {
+            return new GetConvertedTransactionResult(
+                transaction.Id,
+                transaction.CardId,
+                transaction.Description,
+                transaction.TransactionDate,
+                transaction.Amount.Amount,
+                1.0m,
+                transaction.Amount.Amount);
+        }
+
+        var rate = await exchangeRateProvider.GetRateOnOrBeforeAsync(currency, transaction.TransactionDate, 6, ct);
+        if (rate is null)
+            throw new TransactionCurrencyConversionException(currency);
+
+        var converted = Math.Round(transaction.Amount.Amount * rate.Rate, 2, MidpointRounding.ToEven);
+
+        return new GetConvertedTransactionResult(
             transaction.Id,
             transaction.CardId,
             transaction.Description,
             transaction.TransactionDate,
-            transaction.Amount.Amount);
+            transaction.Amount.Amount,
+            rate.Rate,
+            converted);
     }
 }
