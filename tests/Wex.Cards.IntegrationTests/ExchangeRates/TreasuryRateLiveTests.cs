@@ -4,9 +4,7 @@ namespace Wex.Cards.IntegrationTests.ExchangeRates;
 
 /// <summary>
 /// Live smoke tests against the public Treasury Reporting Rates of Exchange API.
-/// Gated by the TREASURY_LIVE_TESTS environment variable — skipped when unset so CI
-/// without outbound network access does not fail. Set the variable to any non-empty
-/// value to opt in. Asserts response shape only, not exact values.
+/// Asserts response shape only, not exact values.
 /// </summary>
 public sealed class TreasuryRateLiveTests
 {
@@ -20,13 +18,9 @@ public sealed class TreasuryRateLiveTests
         return new TreasuryExchangeRateProvider(httpClient);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task GetLatestRateAsync_LiveApi_ReturnsValidShape()
     {
-        Skip.IfNot(
-            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TREASURY_LIVE_TESTS")),
-            "Set TREASURY_LIVE_TESTS env var to run live API tests.");
-
         var sut = BuildLiveProvider();
 
         var result = await sut.GetLatestRateAsync("EUR");
@@ -37,13 +31,9 @@ public sealed class TreasuryRateLiveTests
             "RecordDate must not be in the future.");
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task GetRateOnOrBeforeAsync_LiveApi_ReturnsValidShape()
     {
-        Skip.IfNot(
-            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TREASURY_LIVE_TESTS")),
-            "Set TREASURY_LIVE_TESTS env var to run live API tests.");
-
         var sut = BuildLiveProvider();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
