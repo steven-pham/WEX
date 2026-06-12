@@ -1,8 +1,10 @@
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Wex.Cards.Api.Infrastructure;
 using Wex.Cards.Application;
 using Wex.Cards.Infrastructure;
+using Wex.Cards.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,13 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+// Dev/demo convenience only. In production, run migrations as a separate deployment step.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<CardsDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

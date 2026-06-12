@@ -16,11 +16,8 @@ cp .env.example .env
 # 2. Start the database
 docker compose up -d db
 
-# 3. Apply database migrations
+# 3. Run the API (migrations are applied automatically on startup)
 cd src/Wex.Cards.Api
-dotnet ef database update --project ../Wex.Cards.Infrastructure
-
-# 4. Run the API
 dotnet run
 ```
 
