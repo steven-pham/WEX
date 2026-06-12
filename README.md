@@ -1,6 +1,6 @@
 # WEX Cards API
 
-Take-home assessment — Card payment API in .NET 10.
+Take-home assessment: a card payment API in .NET 10.
 
 ## Prerequisites
 
@@ -39,7 +39,7 @@ cd <repo-root>
 # Unit tests (no external dependencies)
 dotnet test tests/Wex.Cards.UnitTests
 
-# Integration tests (spins up Postgres automatically via Testcontainers — Docker required)
+# Integration tests (spins up Postgres automatically via Testcontainers; Docker required)
 dotnet test tests/Wex.Cards.IntegrationTests
 ```
 
@@ -84,7 +84,7 @@ Any other code returns "no rate available" without calling the API.
 | `CHF` | Switzerland-Franc |
 | `ZAR` | South Africa-Rand |
 
-`USD` is the base currency — a rate of `1.0` is returned without an API call.
+`USD` is the base currency; a rate of `1.0` is returned without an API call.
 
 ## Assumptions
 
@@ -137,7 +137,7 @@ curl -s -X POST http://localhost:5112/cards/<CARD_ID>/transactions \
   -d '{"description": "Coffee shop", "transactionDate": "2025-01-15", "amount": 5.75}' | jq
 ```
 
-**Retrieve a transaction — original amount**
+**Retrieve a transaction (original amount)**
 ```bash
 curl -s http://localhost:5112/transactions/<TX_ID> | jq
 ```
@@ -165,17 +165,17 @@ An HTTP requests file covering all scenarios is also available at
 
 The following points were intentionally left open and are worth discussing in a real world scenario:
 
-1. **Base currency assumption** — stored amounts (credit limit, transaction amounts) are
+1. **Base currency assumption.** Stored amounts (credit limit, transaction amounts) are
    treated as USD. The Treasury API quotes units of foreign currency per 1 USD, so
    conversion is `amount_usd × rate`. Happy to revisit if a different base currency
    is expected.
 
-2. **Combined vs separate endpoint** — `GET /transactions/{id}?currency=XXX` serves both
+2. **Combined vs separate endpoint.** `GET /transactions/{id}?currency=XXX` serves both
    Requirement #2 (no `currency` param → original amount in USD) and Requirement #3
    (with `currency` param → converted amount) from a single endpoint. A separate endpoint
    could make the contract more explicit; the current design favours a smaller surface.
 
-3. **Unsupported currency behaviour** — an ISO 4217 code not in the curated map (e.g.
+3. **Unsupported currency behaviour.** An ISO 4217 code not in the curated map (e.g.
    `THB`) returns `422 Unprocessable Entity` with a ProblemDetails body rather than
    `400 Bad Request`. Open to adjusting if a different status code is preferred.
 
@@ -183,40 +183,40 @@ The following points were intentionally left open and are worth discussing in a 
 
 The following are improvements that would be prioritised in a production system:
 
-1. **Enforce balance on transaction creation** — `TransactionService.AddAsync` currently accepts any
+1. **Enforce balance on transaction creation.** `TransactionService.AddAsync` currently accepts any
    positive amount without checking the card's available balance. A balance check (credit limit minus
    total spent) should happen inside a database transaction with a row-level lock on the card row,
    so two concurrent purchases cannot both succeed when only one fits within the remaining balance.
 
-2. **Idempotency keys** — Payment APIs need protection against duplicate submissions (network retries,
+2. **Idempotency keys.** Payment APIs need protection against duplicate submissions (network retries,
    double-clicks). Adding an `Idempotency-Key` header on `POST /cards/{cardId}/transactions` and
    persisting the key alongside the transaction would let the API return the original response for
    replayed requests rather than creating duplicates.
 
-3. **Transaction reversal / refunds** — There is currently no way to void or refund a transaction.
+3. **Transaction reversal / refunds.** There is currently no way to void or refund a transaction.
    A `POST /transactions/{id}/reversal` endpoint (creating a negative-amount transaction in the same
    domain model) would restore the balance and keep a full audit trail without deleting data.
 
-4. **Authentication & authorisation** — All endpoints are open. In production, cards and transactions
+4. **Authentication & authorisation.** All endpoints are open. In production, cards and transactions
    would be scoped to an authenticated account (e.g. JWT bearer), and a card owner should not be
    able to read or transact against another owner's card.
 
-5. **Exchange rate caching** — Treasury rates are published quarterly, not in real time. Every
+5. **Exchange rate caching.** Treasury rates are published quarterly, not in real time. Every
    balance or transaction query currently hits the external API. A short-lived in-memory or
    distributed cache (e.g. `IMemoryCache` with a 1-hour TTL) would eliminate the latency and
    reduce the risk of the circuit breaker opening under load.
 
-6. **Pagination on transaction history** — `GET /cards/{id}/transactions` does not exist yet, and
+6. **Pagination on transaction history.** `GET /cards/{id}/transactions` does not exist yet, and
    when it does, returning unbounded rows would be unsafe. Standard cursor- or offset-based
    pagination (e.g. `?page=1&pageSize=20`) should be built in from the start.
 
-7. **Domain events & outbox pattern** — Side-effects like sending a spend-alert notification or
+7. **Domain events & outbox pattern.** Side-effects like sending a spend-alert notification or
    updating a downstream ledger should not happen inside the same database transaction as the write.
    Raising domain events (e.g. `TransactionCreated`) and publishing them via an outbox table
    decouples these concerns and guarantees at-least-once delivery even if the process crashes
    mid-request.
 
-8. **Card lifecycle management** — Cards have no status field. Production cards need states
+8. **Card lifecycle management.** Cards have no status field. Production cards need states
    (active, frozen, cancelled) so that transactions can be rejected against a frozen or cancelled
    card without deleting any data.
 
@@ -224,11 +224,74 @@ The following are improvements that would be prioritised in a production system:
 
 ```
 src/
-  Wex.Cards.Api/           — ASP.NET Core Web API (endpoints, DTOs, DI wiring)
-  Wex.Cards.Application/   — Use-case services and ports (interfaces)
-  Wex.Cards.Domain/        — Entities, value objects, domain rules
-  Wex.Cards.Infrastructure/— EF Core DbContext + repositories + migrations, Treasury HTTP client
+  Wex.Cards.Api/            ASP.NET Core Web API (endpoints, DTOs, DI wiring)
+  Wex.Cards.Application/    Use-case services and ports (interfaces)
+  Wex.Cards.Domain/         Entities, value objects, domain rules
+  Wex.Cards.Infrastructure/ EF Core DbContext + repositories + migrations, Treasury HTTP client
 tests/
-  Wex.Cards.UnitTests/      — Pure unit tests (no I/O)
-  Wex.Cards.IntegrationTests/— Integration tests using WebApplicationFactory + Testcontainers
+  Wex.Cards.UnitTests/        Pure unit tests (no I/O)
+  Wex.Cards.IntegrationTests/ Integration tests using WebApplicationFactory + Testcontainers
 ```
+
+## Design Notes & Trade-offs
+
+These are the deliberate engineering decisions behind the code, along with the alternatives I
+weighed. Most are scoped for the assessment but reflect how I'd reason about the same calls in
+production.
+
+1. **Layered (ports-and-adapters) architecture.** The Domain and Application projects have no
+   dependency on EF Core or `HttpClient`; persistence and the Treasury client sit behind ports
+   (`ICardRepository`, `IExchangeRateProvider`) defined in Application and implemented in
+   Infrastructure. The trade-off is more projects and a little wiring ceremony for a small app.
+   I accepted that because it keeps the business rules independently testable, makes the Treasury
+   integration swappable, and stops infrastructure concerns leaking into the core. For a CRUD-only
+   brief this would be over-engineered; the currency-conversion requirement is what justifies the
+   seam.
+
+2. **Errors separate business failures from infrastructure failures.** A currency that has no
+   qualifying rate within six months returns `422 Unprocessable Entity`: the request is
+   well-formed but cannot be satisfied, and the client can act on it (pick another currency). An
+   upstream Treasury outage surfaces as `503 Service Unavailable`: our dependency failed, the
+   request was fine, and a retry may succeed. Collapsing both into one status is the easy mistake:
+   it tells a caller to "fix your request" when the real answer is "try again later", and it
+   pollutes alerting. A single `GlobalExceptionHandler` maps domain exceptions to status codes so
+   this distinction is enforced in one place, and an integration test pins it
+   (`GetTransaction_ProviderFailure_Returns5xxNotUnprocessableEntity`).
+
+3. **Two rounding modes, on purpose.** Input validation uses `MidpointRounding.AwayFromZero`;
+   there it's only a precision guard (reject a credit limit with more than 2 decimal places, an
+   amount with more than 4), so the rounding direction is immaterial. Converted monetary amounts
+   use `MidpointRounding.ToEven` (banker's rounding), which is the financial-reporting standard:
+   it avoids the systematic upward bias that always-round-half-up introduces across many
+   conversions. The modes are intentionally different, not an oversight. I'm flagging it here so
+   it isn't "tidied up" into a single mode later.
+
+4. **`Money` and `CurrencyCode` as value objects.** Amounts are modelled as `Money(amount,
+   currency)` even though every stored value is USD today. The aim is to make the base-currency
+   assumption explicit in the type system rather than leaving bare `decimal`s to mean "USD by
+   convention", and to leave a seam for true multi-currency storage later. The honest trade-off:
+   right now this is slightly richer than it needs to be: conversion results are returned as
+   `decimal`, not `Money`. I'd rather have the assumption named in one type than implied across
+   the codebase, but it's a conscious lean toward the likely next step.
+
+5. **Curated ISO 4217 → Treasury mapping.** The Treasury dataset keys on `country_currency_desc`
+   (e.g. `Euro Zone-Euro`) and has no ISO field, so an explicit dictionary is the authoritative
+   list of supported currencies. The trade-off is manual maintenance versus deriving the set
+   dynamically. I chose the explicit map because it's cheap, documented, and lets the API reject
+   an unsupported code without a wasted network call, at the cost of having to add new currencies
+   by hand.
+
+6. **Testcontainers over EF Core InMemory.** Integration tests run against a real Postgres
+   container so they exercise actual SQL translation (e.g. the `SumAsync` balance query), the real
+   migration, and genuine `decimal` semantics. InMemory would run faster but gives false
+   confidence: it silently passes on things that break against a real provider. For
+   currency-conversion tests the `IExchangeRateProvider` port is substituted so the cases are
+   deterministic and don't depend on the live API, and a single live test guards the real Treasury
+   contract separately.
+
+7. **Validation layered intentionally.** FluentValidation at the API edge handles shape and format
+   and returns `400` with field-level errors; the domain factory methods (`Card.Create`,
+   `Transaction.Create`) enforce the real invariants and are the source of truth, so an entity can
+   never be constructed in an invalid state regardless of caller. The light guards in the service
+   layer are defence in depth against a caller that bypasses the edge validators. The duplication
+   is deliberate: the domain stays authoritative rather than trusting the boundary.
